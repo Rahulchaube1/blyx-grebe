@@ -1,0 +1,61 @@
+use keyorders;
+use pagecursor;
+
+fn grebe_num(value: i64) -> f64 {
+    at([value], 0)
+}
+
+fn grebe_finite(values: vector) -> bool {
+    let mut i = 0;
+    while i < len(values) {
+        let value = at(values, i);
+        if !(value - value == 0.0) {
+            return false;
+        }
+        i += 1;
+    }
+    true
+}
+
+fn grebe_integers(values: vector) -> bool {
+    let mut i = 0;
+    while i < len(values) {
+        let value = at(values, i);
+        if !(value >= -9007199254740991.0 && value <= 9007199254740991.0 && value % 1.0 == 0.0) {
+            return false;
+        }
+        i += 1;
+    }
+    true
+}
+
+fn grebe_compute(keys: vector, cursor: f64, size: f64) -> vector {
+    let quality = keyorders_strict(keys);
+    if len(quality) == 0 || at(quality, 0) != 1.0 {
+        return [];
+    }
+    let page = pagecursor_after(keys, cursor, size);
+    if len(page) == 0 {
+        return [];
+    }
+    let mut resume = cursor;
+    let mut i = 0;
+    while i < len(keys) && grebe_num(i) < at(page, 1) {
+        if grebe_num(i) >= at(page, 0) {
+            resume = at(keys, i);
+        }
+        i += 1;
+    }
+    [at(page, 0), at(page, 1), resume, at(page, 2)]
+}
+
+// Build a repeatable keyset page and return the exact next cursor.
+// Returns [first index, exclusive end, resume key, has more]. On an empty result the input cursor is retained. Supply stable unique numeric keys from a consistent snapshot.
+pub fn grebe_page(keys: vector, cursor: f64, size: f64) -> vector {
+    if !grebe_integers(keys) { return []; }
+    if !(cursor >= -9007199254740991.0 && cursor <= 9007199254740991.0 && cursor % 1.0 == 0.0) { return []; }
+    if !(size >= 1.0 && size <= 9007199254740991.0 && size % 1.0 == 0.0) { return []; }
+    let result = grebe_compute(keys, cursor, size);
+    if !grebe_finite(result) { return []; }
+    result
+}
