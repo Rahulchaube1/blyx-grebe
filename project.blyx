@@ -1,0 +1,30 @@
+use std::cli;
+use console;
+use grebe;
+
+fn main() {
+    let argv = cli_args();
+    let count = args_len(argv);
+    if count == 1 && args_at(argv, 0) == "--help" {
+        println!("Build a repeatable keyset page and return the exact next cursor.");
+        println!("Usage: grebe keys cursor size");
+        println!("Vector arguments are comma-separated; use [] for an empty vector.");
+        return;
+    }
+    let mut result = [];
+    if count == 0 {
+        result = grebe_page([10, 20, 30, 40], 15.0, 2.0);
+    } else {
+        if count != 3 { stderr_line("Wrong argument count. Use --help."); process_exit(2); }
+        let keys = console_vector(args_at(argv, 0));
+        let cursor = console_value(args_at(argv, 1));
+        let size = console_value(args_at(argv, 2));
+        result = grebe_page(keys, cursor, size);
+    }
+    if len(result) == 0 { stderr_line("Invalid input for Grebe. See the package input contract."); process_exit(1); }
+    let mut i = 0;
+    while i < len(result) {
+        println!(at(result, i));
+        i += 1;
+    }
+}
